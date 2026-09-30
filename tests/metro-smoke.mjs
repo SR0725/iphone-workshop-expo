@@ -25,7 +25,7 @@ try {
   await page.getByText('今天的小事', { exact: true }).waitFor({ timeout: 60000 });
   await page.getByRole('button', { name: '新增紀錄', exact: true }).click();
   await page.getByLabel('標題', { exact: true }).fill('Windows Metro 實測');
-  await page.getByRole('button', { name: '儲存', exact: true }).click();
+  await page.getByRole('button', { name: '儲存紀錄', exact: true }).click();
   await page.getByText('Windows Metro 實測', { exact: true }).waitFor();
   await page.reload();
   await page.getByText('Windows Metro 實測', { exact: true }).waitFor();
