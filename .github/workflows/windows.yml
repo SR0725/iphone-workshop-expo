@@ -24,6 +24,8 @@ jobs:
       - run: npx expo export --platform ios --output-dir dist-ios
       - run: npx playwright install chromium
       - run: npx playwright test
+      - name: Start Expo Metro and verify live app
+        run: node tests/metro-smoke.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
