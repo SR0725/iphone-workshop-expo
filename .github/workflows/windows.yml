@@ -1,0 +1,34 @@
+name: Windows workshop verification
+on: [push, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Install and launch Codex CLI without credentials
+        run: npx --yes @openai/codex --version
+      - run: npx tsc --noEmit
+      - run: npx expo install --check
+      - run: npx expo export --platform web
+      - run: npx expo export --platform ios --output-dir dist-ios
+      - run: npx playwright install chromium
+      - run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-evidence
+          path: |
+            evidence/
+            test-results/
+          retention-days: 14

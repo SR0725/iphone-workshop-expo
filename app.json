@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "app",
-    "slug": "app",
+    "name": "今天的小事",
+    "slug": "small-things-workshop",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
