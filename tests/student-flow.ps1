@@ -6,7 +6,7 @@ $ProgressPreference = 'SilentlyContinue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $env:Path = "$env:SystemRoot\system32;$env:SystemRoot;$env:SystemRoot\System32\WindowsPowerShell\v1.0"
 $env:EXPO_NO_TELEMETRY = '1'
-$starterSha = '379dcff6c65d270300617bd59d6c077d088bb450'
+$starterSha = 'ae4080d1d55e1536f7c36e04892ae78b4d059f18'
 # Test-only switch: the launcher normally opens a browser for Expo login.
 $env:WORKSHOP_SKIP_LOGIN = '1'
 $result = [ordered]@{ user = $env:USERNAME; localAppData = $env:LOCALAPPDATA; scenarios = @() }
@@ -99,6 +99,34 @@ try {
       & taskkill.exe /PID $proc.Id /T /F | Out-Null
       Start-Sleep -Seconds 3
     }
+  }
+  # Step 4: fallback launcher through Expo's tunnel (outbound only).
+  $t = [ordered]@{ label = 'tunnel fallback launcher in C:\workshop' }
+  $result.tunnel = $t
+  $fallback = Get-ChildItem 'C:\workshop' -Filter '*App.cmd' | Where-Object { $_.Name -ne $launcher.Name } | Select-Object -First 1
+  if (-not $fallback) { throw 'Fallback launcher missing' }
+  $out = Join-Path $Evidence 'fallback.out.log'
+  $err = Join-Path $Evidence 'fallback.err.log'
+  $proc = Start-Process cmd.exe -ArgumentList '/c', ('"' + $fallback.FullName + '"') -WorkingDirectory 'C:\workshop' -RedirectStandardOutput $out -RedirectStandardError $err -PassThru -WindowStyle Hidden
+  try {
+    $curl = Join-Path $env:SystemRoot 'System32\curl.exe'
+    $ready = $false
+    for ($i = 0; $i -lt 90; $i++) {
+      if ($proc.HasExited) { throw "Fallback launcher exited early with code $($proc.ExitCode)" }
+      if ((Get-Content $out -Raw -ErrorAction SilentlyContinue) -match 'Tunnel ready') { $ready = $true; break }
+      Start-Sleep -Seconds 2
+    }
+    if (-not $ready) { throw 'Tunnel was not ready within 3 minutes' }
+    $mf = Join-Path $Evidence 'manifest-tunnel.json'
+    & $curl -s -m 60 -H 'expo-platform: ios' -H 'accept: application/expo+json,application/json' -o $mf 'http://127.0.0.1:8081/'
+    $m = Get-Content $mf -Raw -Encoding UTF8 | ConvertFrom-Json
+    $u = [uri]$m.launchAsset.url
+    $t.publicHost = $u.Host
+    $t.publicStatus = (& $curl -s -m 30 ($u.Scheme + '://' + $u.Host + '/status')) -join ''
+    if ($t.publicStatus -notmatch 'packager-status:running') { throw 'Tunnel URL did not answer' }
+    $t.passed = $true
+  } finally {
+    & taskkill.exe /PID $proc.Id /T /F | Out-Null
   }
   $result.passed = $true
   Save-Result
