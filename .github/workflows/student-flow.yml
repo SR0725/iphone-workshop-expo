@@ -31,7 +31,9 @@ jobs:
           Write-Output "node.exe firewall rules: $($rules.Count)"
           Get-Content "$evidence\student-flow.json" -ErrorAction SilentlyContinue
           Get-Content "$evidence\runner.err.log" -ErrorAction SilentlyContinue
-          if ($process.ExitCode -ne 0) { throw "Student flow exited $($process.ExitCode)" }
+          # Processes started with -Credential do not expose an exit code here; trust the result file.
+          $result = Get-Content "$evidence\student-flow.json" -Raw -Encoding UTF8 | ConvertFrom-Json
+          if (-not $result.passed) { throw "Student flow failed: $($result.error)" }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
