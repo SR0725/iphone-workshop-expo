@@ -92,7 +92,7 @@ try {
       $bundleFile = Join-Path $env:TEMP ("bundle-" + $result.scenarios.Count + ".js")
       $code = (& $curl -s -m 600 -o $bundleFile -w '%{http_code}' ('http://127.0.0.1:8081' + $bundleUrl.PathAndQuery)) -join ''
       $bundleText = [IO.File]::ReadAllText($bundleFile, [Text.Encoding]::UTF8)
-      $s.iosBundle = @{ status = $code; bytes = (Get-Item $bundleFile).Length; containsAppTitle = $bundleText.Contains((-join [char[]](0x4ECA,0x5929,0x7684,0x5C0F,0x4E8B))) }
+      $s.iosBundle = @{ status = $code; bytes = (Get-Item $bundleFile).Length; containsAppTitle = ($bundleText.Contains((-join [char[]](0x4ECA,0x5929,0x7684,0x5C0F,0x4E8B))) -or $bundleText.ToLower().Contains('\u4eca\u5929\u7684\u5c0f\u4e8b')) }
       if ($code -ne '200' -or -not $s.iosBundle.containsAppTitle) { throw 'iOS bundle missing or without the app title' }
       $s.passed = $true
     } finally {
