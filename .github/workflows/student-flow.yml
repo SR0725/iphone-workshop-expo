@@ -1,0 +1,32 @@
+name: Student flow on a fresh Windows account
+on: [workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  student:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run setup and double-click launcher as a non-admin user with a Chinese name
+        shell: powershell
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP 'student'
+          $evidence = Join-Path $root 'evidence'
+          New-Item -ItemType Directory -Force $evidence | Out-Null
+          Copy-Item tests/student-flow.ps1 $root
+          $user = -join [char[]](0x5DE5,0x4F5C,0x574A,0x5B78,0x54E1)
+          $password = ConvertTo-SecureString (([guid]::NewGuid().ToString()) + 'aA!9') -AsPlainText -Force
+          New-LocalUser -Name $user -Password $password | Out-Null
+          Add-LocalGroupMember -SID 'S-1-5-32-545' -Member $user
+          & icacls $root /grant "${user}:(OI)(CI)M" | Out-Null
+          $credential = New-Object System.Management.Automation.PSCredential(".\$user", $password)
+          $process = Start-Process powershell.exe -Credential $credential -LoadUserProfile -WorkingDirectory $root -ArgumentList "-NoProfile -File $root\student-flow.ps1 -Evidence $evidence" -RedirectStandardOutput "$evidence\runner.out.log" -RedirectStandardError "$evidence\runner.err.log" -PassThru -Wait
+          Get-Content "$evidence\student-flow.json" -ErrorAction SilentlyContinue
+          Get-Content "$evidence\runner.err.log" -ErrorAction SilentlyContinue
+          if ($process.ExitCode -ne 0) { throw "Student flow exited $($process.ExitCode)" }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: student-flow-evidence
+          path: ${{ runner.temp }}/student/evidence/
