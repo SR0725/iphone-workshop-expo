@@ -57,7 +57,8 @@ try {
     Expand-Archive $starterZip -DestinationPath $unpack
     $inner = Get-ChildItem $unpack -Directory | Select-Object -First 1
     Get-ChildItem $inner.FullName -Force | Move-Item -Destination $t.path
-    $launcher = Get-ChildItem $t.path -Filter '*App.cmd' | Select-Object -First 1
+    $launcherName = (-join [char[]](0x555F,0x52D5)) + 'App.cmd'
+    $launcher = Get-Item (Join-Path $t.path $launcherName) -ErrorAction SilentlyContinue
     if (-not $launcher) { throw 'Launcher .cmd missing after unzip' }
     $s.launcher = $launcher.Name
 
@@ -103,7 +104,9 @@ try {
   # Step 4: fallback launcher through Expo's tunnel (outbound only).
   $t = [ordered]@{ label = 'tunnel fallback launcher in C:\workshop' }
   $result.tunnel = $t
-  $fallback = Get-ChildItem 'C:\workshop' -Filter '*App.cmd' | Where-Object { $_.Name -ne $launcher.Name } | Select-Object -First 1
+  $fallbackName = (-join [char[]](0x5099,0x7528,0x9023,0x7DDA)) + 'App.cmd'
+  $fallback = Get-Item (Join-Path 'C:\workshop' $fallbackName) -ErrorAction SilentlyContinue
+  $t.launcher = $fallbackName
   if (-not $fallback) { throw 'Fallback launcher missing' }
   $out = Join-Path $Evidence 'fallback.out.log'
   $err = Join-Path $Evidence 'fallback.err.log'
