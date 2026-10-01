@@ -1,27 +1,20 @@
-# 今天的小事
+# 今天的小事：工作坊完成版
 
-Expo + Codex workshop reference app. React Native with local persistence, no server account or API key required.
+iPhone App Vibe Coding 工作坊（2026/10/03）的完成參考版。清單、新增、編輯、刪除、分類篩選、本機保存都已完成。進度落後時，把它下載到**另一個新資料夾**繼續上課，不要覆蓋自己的作品。
 
-## Start
+## 啟動
+1. 在 Codex 打開這個資料夾，貼上講義裡的「環境準備提示詞」。
+2. 雙擊 `啟動App.cmd`（Windows）或 `啟動App.command`（Mac）。第一次會請你在瀏覽器登入免費的 Expo 帳號。
+3. iPhone 的 Expo Go 登入同一個 Expo 帳號，用 iPhone 相機掃 QR Code 開啟。
 
-Install Node.js 22 LTS and Git. In this directory:
+## 已驗證範圍
+- 型別檢查、iOS 打包、網頁自動測試（新增、空白驗證、編輯、分類、刪除取消／確認、重新整理保存、損壞資料保護）。
+- Windows（GitHub Actions 雲端 Windows）安裝、啟動開發伺服器與網頁操作。
+- iOS 模擬器上的 Expo Go 操作。
 
-```sh
-npm ci
-npm start
-```
+實體 iPhone、教室網路、學員自己的 Codex 帳號，需要在課前另外實測，不以上述結果代替。
 
-Install the matching Expo Go on your iPhone, connect phone and computer to the same network, then scan the terminal QR code using the iPhone camera. Keep the terminal running. Windows does not provide Apple's iOS Simulator; use a physical iPhone.
-
-For a computer preview, use `npm run web`. Browser storage and iPhone storage are separate. This is a development preview, not a standalone installed application.
-
-## Verify
-
-```sh
-npx tsc --noEmit
-npx expo export --platform web
-npx expo export --platform ios --output-dir dist-ios
-npx playwright test
-```
-
-Tests exercise blank validation, add/edit/filter/delete, persistence, mobile/desktop layout and corrupted storage protection. Windows CI uses a real hosted Windows runner; this does not validate a learner's Codex login, classroom Wi-Fi or physical iPhone by itself.
+## 提醒
+- 鎖定 Expo SDK 57，請不要升級套件。
+- Expo Go 裡看到的是開發預覽，不是獨立安裝的 App，也不是上架。
+- 電腦瀏覽器和 iPhone 的資料各自保存，不會同步。

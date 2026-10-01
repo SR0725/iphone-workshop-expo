@@ -6,7 +6,9 @@ $ProgressPreference = 'SilentlyContinue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $env:Path = "$env:SystemRoot\system32;$env:SystemRoot;$env:SystemRoot\System32\WindowsPowerShell\v1.0"
 $env:EXPO_NO_TELEMETRY = '1'
-$starterSha = '45448035715d8037a37aeac9243ac02c5b6b052a'
+$starterSha = '379dcff6c65d270300617bd59d6c077d088bb450'
+# Test-only switch: the launcher normally opens a browser for Expo login.
+$env:WORKSHOP_SKIP_LOGIN = '1'
 $result = [ordered]@{ user = $env:USERNAME; localAppData = $env:LOCALAPPDATA; scenarios = @() }
 New-Item -ItemType Directory -Force $Evidence | Out-Null
 
@@ -65,25 +67,33 @@ try {
     $started = Get-Date
     $proc = Start-Process cmd.exe -ArgumentList '/c', ('"' + $launcher.FullName + '"') -WorkingDirectory $t.path -RedirectStandardOutput $out -RedirectStandardError $err -PassThru -WindowStyle Hidden
     try {
-      $status = $null
-      for ($i = 0; $i -lt 300; $i++) {
+      $status = ''
+      $curl = Join-Path $env:SystemRoot 'System32\curl.exe'
+      for ($i = 0; $i -lt 150; $i++) {
         if ($proc.HasExited) { throw "Launcher exited early with code $($proc.ExitCode)" }
-        try { $status = (Invoke-WebRequest 'http://127.0.0.1:8081/status' -UseBasicParsing -TimeoutSec 3).Content } catch {}
+        $status = (& $curl -s -m 3 'http://127.0.0.1:8081/status') -join ''
         if ($status -match 'packager-status:running') { break }
         Start-Sleep -Seconds 2
       }
-      if ($status -notmatch 'packager-status:running') { throw 'Metro did not report running within 10 minutes' }
+      $s.listening = @(& netstat.exe -ano | Select-String ':8081\s' | ForEach-Object { $_.Line.Trim() })
+      if ($status -notmatch 'packager-status:running') {
+        $s.lastStatus = $status
+        $s.localhostStatus = (& $curl -s -m 5 -w ' http=%{http_code}' 'http://localhost:8081/status') -join ''
+        throw 'Metro did not answer /status within 5 minutes'
+      }
       $s.secondsUntilServerReady = [int]((Get-Date) - $started).TotalSeconds
-      $manifestResponse = Invoke-WebRequest 'http://127.0.0.1:8081/' -UseBasicParsing -Headers @{ 'expo-platform' = 'ios'; 'accept' = 'application/expo+json,application/json' }
-      $manifest = $manifestResponse.Content | ConvertFrom-Json
+      $manifestFile = Join-Path $Evidence ("manifest-" + $result.scenarios.Count + ".json")
+      & $curl -s -m 60 -H 'expo-platform: ios' -H 'accept: application/expo+json,application/json' -o $manifestFile 'http://127.0.0.1:8081/'
+      $manifest = Get-Content $manifestFile -Raw -Encoding UTF8 | ConvertFrom-Json
       $client = $manifest.extra.expoClient
       $s.manifest = @{ name = $client.name; sdkVersion = $client.sdkVersion; launchAssetHost = ([uri]$manifest.launchAsset.url).Host }
       if ($client.sdkVersion -notlike '57.*') { throw "Unexpected SDK in manifest: $($client.sdkVersion)" }
       $bundleUrl = ([uri]$manifest.launchAsset.url)
-      $local = 'http://127.0.0.1:8081' + $bundleUrl.PathAndQuery
-      $bundle = Invoke-WebRequest $local -UseBasicParsing -TimeoutSec 600
-      $s.iosBundle = @{ status = [int]$bundle.StatusCode; bytes = $bundle.RawContentLength; containsAppTitle = $bundle.Content.Contains((-join [char[]](0x4ECA,0x5929,0x7684,0x5C0F,0x4E8B))) }
-      if (-not $s.iosBundle.containsAppTitle) { throw 'iOS bundle did not contain the app title' }
+      $bundleFile = Join-Path $env:TEMP ("bundle-" + $result.scenarios.Count + ".js")
+      $code = (& $curl -s -m 600 -o $bundleFile -w '%{http_code}' ('http://127.0.0.1:8081' + $bundleUrl.PathAndQuery)) -join ''
+      $bundleText = [IO.File]::ReadAllText($bundleFile, [Text.Encoding]::UTF8)
+      $s.iosBundle = @{ status = $code; bytes = (Get-Item $bundleFile).Length; containsAppTitle = $bundleText.Contains((-join [char[]](0x4ECA,0x5929,0x7684,0x5C0F,0x4E8B))) }
+      if ($code -ne '200' -or -not $s.iosBundle.containsAppTitle) { throw 'iOS bundle missing or without the app title' }
       $s.passed = $true
     } finally {
       & taskkill.exe /PID $proc.Id /T /F | Out-Null

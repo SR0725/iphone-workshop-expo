@@ -22,6 +22,9 @@ jobs:
           & icacls $root /grant "${user}:(OI)(CI)M" | Out-Null
           $credential = New-Object System.Management.Automation.PSCredential(".\$user", $password)
           $process = Start-Process powershell.exe -Credential $credential -LoadUserProfile -WorkingDirectory $root -ArgumentList "-NoProfile -File $root\student-flow.ps1 -Evidence $evidence" -RedirectStandardOutput "$evidence\runner.out.log" -RedirectStandardError "$evidence\runner.err.log" -PassThru -Wait
+          Get-NetConnectionProfile | Select-Object Name, NetworkCategory | ConvertTo-Json | Set-Content "$evidence\network-profile.json"
+          Get-NetFirewallApplicationFilter | Where-Object { $_.Program -like '*node.exe' } | Get-NetFirewallRule | Select-Object DisplayName, Direction, Action, Profile, Enabled | ConvertTo-Json | Set-Content "$evidence\node-firewall-rules.json"
+          Get-Content "$evidence\node-firewall-rules.json"
           Get-Content "$evidence\student-flow.json" -ErrorAction SilentlyContinue
           Get-Content "$evidence\runner.err.log" -ErrorAction SilentlyContinue
           if ($process.ExitCode -ne 0) { throw "Student flow exited $($process.ExitCode)" }

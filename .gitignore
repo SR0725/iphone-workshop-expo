@@ -45,3 +45,5 @@ playwright-report/
 evidence/
 .env
 .env.*
+.verify/
+.checkpoints/
