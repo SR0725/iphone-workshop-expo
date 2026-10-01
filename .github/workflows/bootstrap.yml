@@ -1,0 +1,31 @@
+name: Windows without developer tools on PATH
+on: [workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  bootstrap:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Isolate PATH and bootstrap from official ZIP
+        shell: powershell
+        run: |
+          $env:Path = "$env:SystemRoot\system32;$env:SystemRoot;$env:SystemRoot\System32\WindowsPowerShell\v1.0"
+          $missing = @('node','npm','npx','git','winget') | ForEach-Object {
+            if (Get-Command $_ -ErrorAction SilentlyContinue) { throw "Unexpected installed command: $_" }
+            $_
+          }
+          $root = Join-Path $env:RUNNER_TEMP 'portable-workshop'
+          New-Item -ItemType Directory -Force $root | Out-Null
+          @{ absentCommands=$missing; isolation='PATH only; runner remains administrator'; os=[Environment]::OSVersion.ToString() } | ConvertTo-Json | Set-Content "$root\before.json"
+          $env:CI = '1'
+          $env:EXPO_NO_TELEMETRY = '1'
+          & ./tests/bootstrap-windows.ps1 -Root $root -Verify
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: portable-windows-evidence
+          path: |
+            ${{ runner.temp }}/portable-workshop/before.json
+            ${{ runner.temp }}/portable-workshop/**/evidence/
