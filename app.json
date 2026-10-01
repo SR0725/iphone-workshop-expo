@@ -1,0 +1,9 @@
+{
+  "expo": {
+    "name": "今天的小事",
+    "slug": "small-things-workshop-starter",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light"
+  }
+}
