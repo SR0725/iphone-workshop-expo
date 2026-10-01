@@ -13,6 +13,7 @@
 - 不新增需要原生程式碼、Expo Go 不支援的套件。真的需要新套件時，先說明原因和影響，等使用者同意。
 - 不刪除、不重建、不重置使用者的專案或資料。要救援就另開資料夾。
 - 不關閉防火牆或防毒、不繞過公司管理政策、不要求密碼、不付費。
+- 如果有安裝 Expo 官方外掛（expo skills），以本檔規則優先：課堂上不加入 `expo-router`、`@expo/ui` 或其他新套件，不改專案結構，不建立 development build，不使用 EAS 建置、更新或上架服務，不送出 Expo 回饋或遙測。
 
 ## 指令與環境
 - Windows 一律用 `npm.cmd`、`npx.cmd`，不要修改 PowerShell 執行原則。
@@ -20,6 +21,7 @@
   - Windows：`%LOCALAPPDATA%\RayWorkshop\node-v22.23.3-win-x64`（ARM 電腦是 `-win-arm64`）
   - Mac：`~/.rayworkshop/node-v22.23.3-darwin-arm64`（Intel Mac 是 `-darwin-x64`）的 `bin`
   - 只在你執行的指令裡暫時加到 PATH，不改系統或全域設定。
+- 2026/9/3 起，實體 iPhone 的 Expo Go 要求電腦端 Expo CLI 和手機 Expo Go 登入同一個 Expo 帳號。啟動檔會在需要時用 `npx expo login --browser` 讓使用者自己在瀏覽器登入；不要替使用者輸入或保存密碼。可用 `npx expo whoami` 查目前登入的帳號。
 - 使用者用雙擊 `啟動App.cmd`（Windows）或 `啟動App.command`（Mac）啟動開發伺服器。它開著時，你改完程式，Expo Go 會自動更新。
 - 不要另外常駐一個開發伺服器搶 8081 埠。需要自己驗證時，用下面的檢查；若真的要啟動伺服器，換別的埠，驗證完就關掉。
 

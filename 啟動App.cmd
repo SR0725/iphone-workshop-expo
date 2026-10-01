@@ -11,20 +11,36 @@ if exist "%PORTABLE_NODE%\node.exe" set "PATH=%PORTABLE_NODE%;%PATH%"
 where node >nul 2>nul
 if errorlevel 1 goto :no_node
 if not exist "node_modules\expo\package.json" goto :install
-goto :start
+goto :account
 
 :install
 echo.
 echo 第一次啟動：正在安裝專案套件，請稍等幾分鐘……
 call npm.cmd ci
 if errorlevel 1 goto :install_failed
-goto :start
+goto :account
 
-:start
+:account
+if defined WORKSHOP_SKIP_LOGIN goto :serve
+call npx.cmd expo whoami >nul 2>nul
+if not errorlevel 1 goto :serve
+echo.
+echo ==========================================================
+echo  iPhone 的 Expo Go 規定：電腦和手機要登入同一個 Expo 帳號。
+echo  瀏覽器會打開 Expo 登入頁。還沒有帳號就點 Sign up 免費註冊。
+echo  登入完成後回到這個視窗。
+echo ==========================================================
+call npx.cmd expo login --browser
+if errorlevel 1 goto :login_failed
+goto :serve
+
+:serve
 echo.
 echo ==========================================================
 echo  保持這個視窗開著。用 iPhone 相機掃下面的 QR Code，
 echo  在 Expo Go 開啟。要停止請按 Ctrl+C。
+echo  手機的 Expo Go 要登入這個 Expo 帳號：
+if not defined WORKSHOP_SKIP_LOGIN call npx.cmd expo whoami
 echo ==========================================================
 echo.
 call npm.cmd run start -- --go
@@ -42,5 +58,11 @@ exit /b 1
 :install_failed
 echo.
 echo 套件安裝失敗。把這個視窗的文字全部複製給 Codex，請它找原因。
+pause
+exit /b 1
+
+:login_failed
+echo.
+echo Expo 登入沒有完成。可以再雙擊一次這個檔案重試，或請助教協助。
 pause
 exit /b 1

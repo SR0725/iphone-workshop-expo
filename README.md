@@ -5,9 +5,10 @@ iPhone App Vibe Coding 工作坊（2026/10/03）的起始專案。畫面只有�
 ## 第一次使用
 1. 在 Codex 打開這個資料夾。
 2. 貼上講義裡的「環境準備提示詞」，讓 Codex 檢查電腦、補齊 Node.js、安裝套件。
-3. 雙擊 `啟動App.cmd`（Windows）或 `啟動App.command`（Mac），用 iPhone 相機掃 QR Code，在 Expo Go 開啟。
+3. 雙擊 `啟動App.cmd`（Windows）或 `啟動App.command`（Mac）。第一次會請你在瀏覽器登入免費的 Expo 帳號。
+4. iPhone 的 Expo Go 登入同一個 Expo 帳號，再用 iPhone 相機掃 QR Code 開啟。
 
-不需要 Git、Xcode、Android Studio 或管理員權限。
+不需要 Git、Xcode、Android Studio。
 
 ## 檔案
 - `PRD.md`：需求。課堂上換成你自己的版本。
