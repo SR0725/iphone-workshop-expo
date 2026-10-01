@@ -8,6 +8,8 @@ iPhone App Vibe Coding 工作坊（2026/10/03）的起始專案。畫面只有�
 3. 雙擊 `啟動App.cmd`（Windows）或 `啟動App.command`（Mac）。第一次會請你在瀏覽器登入免費的 Expo 帳號。
 4. iPhone 的 Expo Go 登入同一個 Expo 帳號，再用 iPhone 相機掃 QR Code 開啟。
 
+手機一直連不上電腦時，改雙擊 `備用連線App`（透過 Expo 的公開通道，比較慢）。
+
 不需要 Git、Xcode、Android Studio。
 
 ## 檔案
