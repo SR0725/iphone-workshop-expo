@@ -21,7 +21,10 @@ jobs:
           Add-LocalGroupMember -SID 'S-1-5-32-545' -Member $user
           & icacls $root /grant "${user}:(OI)(CI)M" | Out-Null
           $credential = New-Object System.Management.Automation.PSCredential(".\$user", $password)
-          $process = Start-Process powershell.exe -Credential $credential -LoadUserProfile -WorkingDirectory $root -ArgumentList "-NoProfile -File $root\student-flow.ps1 -Evidence $evidence" -RedirectStandardOutput "$evidence\runner.out.log" -RedirectStandardError "$evidence\runner.err.log" -PassThru -Wait
+          $process = Start-Process powershell.exe -Credential $credential -LoadUserProfile -WorkingDirectory $root -ArgumentList "-NoProfile -File $root\student-flow.ps1 -Evidence $evidence" -RedirectStandardOutput "$evidence\runner.out.log" -RedirectStandardError "$evidence\runner.err.log" -PassThru
+          # Wait for the script itself, not for detached helpers such as the ngrok binary.
+          if (-not $process.WaitForExit(1500000)) { throw 'Student flow did not finish in 25 minutes' }
+          Get-Process ngrok, node -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
           Get-NetConnectionProfile | Select-Object Name, NetworkCategory | ConvertTo-Json | Set-Content "$evidence\network-profile.json"
           $rules = @(Get-NetFirewallApplicationFilter | Where-Object { $_.Program -like '*node.exe' } | Get-NetFirewallRule | Select-Object DisplayName, Direction, Action, Profile, Enabled)
           ConvertTo-Json -InputObject $rules | Set-Content "$evidence\node-firewall-rules.json"

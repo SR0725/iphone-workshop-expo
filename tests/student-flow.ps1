@@ -127,6 +127,7 @@ try {
     $t.passed = $true
   } finally {
     & taskkill.exe /PID $proc.Id /T /F | Out-Null
+    Get-Process ngrok -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
   }
   $result.passed = $true
   Save-Result
