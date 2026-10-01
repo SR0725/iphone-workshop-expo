@@ -8,24 +8,26 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Isolate PATH and bootstrap from official ZIP
+      - name: Bootstrap as a new standard user without developer commands
         shell: powershell
         run: |
-          $env:Path = "$env:SystemRoot\system32;$env:SystemRoot;$env:SystemRoot\System32\WindowsPowerShell\v1.0"
-          $missing = @('node','npm','npx','git','winget') | ForEach-Object {
-            if (Get-Command $_ -ErrorAction SilentlyContinue) { throw "Unexpected installed command: $_" }
-            $_
-          }
           $root = Join-Path $env:RUNNER_TEMP 'portable-workshop'
           New-Item -ItemType Directory -Force $root | Out-Null
-          @{ absentCommands=$missing; isolation='PATH only; runner remains administrator'; os=[Environment]::OSVersion.ToString() } | ConvertTo-Json | Set-Content "$root\before.json"
-          $env:CI = '1'
-          $env:EXPO_NO_TELEMETRY = '1'
-          & ./tests/bootstrap-windows.ps1 -Root $root -Verify
+          $password = ConvertTo-SecureString (([guid]::NewGuid().ToString()) + 'aA!9') -AsPlainText -Force
+          New-LocalUser -Name WorkshopStudent -Password $password | Out-Null
+          Add-LocalGroupMember -SID 'S-1-5-32-545' -Member WorkshopStudent
+          Copy-Item tests/*.ps1 $root
+          & icacls $root /grant 'WorkshopStudent:(OI)(CI)M' | Out-Null
+          $credential = New-Object System.Management.Automation.PSCredential('.\WorkshopStudent', $password)
+          $process = Start-Process powershell.exe -Credential $credential -LoadUserProfile -WorkingDirectory $root -ArgumentList "-NoProfile -File $root\isolated-bootstrap.ps1 -Root $root" -RedirectStandardOutput "$root\stdout.log" -RedirectStandardError "$root\stderr.log" -PassThru -Wait
+          Get-Content "$root\stdout.log"
+          Get-Content "$root\stderr.log"
+          if ($process.ExitCode -ne 0) { throw "Bootstrap exited $($process.ExitCode)" }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: portable-windows-evidence
           path: |
             ${{ runner.temp }}/portable-workshop/before.json
+            ${{ runner.temp }}/portable-workshop/*.log
             ${{ runner.temp }}/portable-workshop/**/evidence/
