@@ -52,11 +52,28 @@ echo  手機的 Expo Go 要登入這個 Expo 帳號：
 if not defined WORKSHOP_SKIP_LOGIN call npx.cmd expo whoami
 echo ==========================================================
 echo.
+set "TRY=0"
+:tunnel
+set /a TRY+=1
 call npx.cmd expo start --tunnel --go
+if not errorlevel 1 goto :stopped
+if %TRY% GEQ 3 goto :tunnel_failed
+echo.
+echo 通道沒有連上（Expo 使用的 ngrok 服務偶爾會這樣），10 秒後自動再試一次……
+ping -n 11 127.0.0.1 >nul
+goto :tunnel
+
+:stopped
 echo.
 echo 備用連線已停止。若不是你自己停止的，把這個視窗的文字複製給 Codex 或助教。
 pause
 exit /b 0
+
+:tunnel_failed
+echo.
+echo 試了三次通道都連不上。請先用電腦瀏覽器預覽繼續上課，並告訴助教。
+pause
+exit /b 1
 
 :no_node
 echo.

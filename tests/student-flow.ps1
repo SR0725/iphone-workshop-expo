@@ -6,7 +6,7 @@ $ProgressPreference = 'SilentlyContinue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $env:Path = "$env:SystemRoot\system32;$env:SystemRoot;$env:SystemRoot\System32\WindowsPowerShell\v1.0"
 $env:EXPO_NO_TELEMETRY = '1'
-$starterSha = 'ae4080d1d55e1536f7c36e04892ae78b4d059f18'
+$starterSha = '456456282e6e5ed30746866197ffc40e7b8ed921'
 # Test-only switch: the launcher normally opens a browser for Expo login.
 $env:WORKSHOP_SKIP_LOGIN = '1'
 $result = [ordered]@{ user = $env:USERNAME; localAppData = $env:LOCALAPPDATA; scenarios = @() }

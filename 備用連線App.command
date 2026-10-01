@@ -40,7 +40,10 @@ if [ -z "$WORKSHOP_SKIP_LOGIN" ]; then
 fi
 echo "=========================================================="
 echo
-npx expo start --tunnel --go
+for TRY in 1 2 3; do
+  npx expo start --tunnel --go && { echo; echo "備用連線已停止。若不是你自己停止的，把這個視窗的文字複製給 Codex 或助教。"; pause_and_exit 0; }
+  [ "$TRY" -lt 3 ] && { echo; echo "通道沒有連上（Expo 使用的 ngrok 服務偶爾會這樣），10 秒後自動再試一次……"; sleep 10; }
+done
 echo
-echo "備用連線已停止。若不是你自己停止的，把這個視窗的文字複製給 Codex 或助教。"
-pause_and_exit 0
+echo "試了三次通道都連不上。請先用電腦瀏覽器預覽繼續上課，並告訴助教。"
+pause_and_exit 1
