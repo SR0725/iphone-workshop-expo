@@ -1,0 +1,45 @@
+name: Live Expo on Windows (30 minutes)
+# Serves the workshop app from a hosted Windows machine through Expo's tunnel so a
+# real phone can open it. Without EXPO_TOKEN only the phone-browser (web) path works;
+# with an EXPO_TOKEN secret, Expo Go on a physical iPhone signed into the same account works too.
+on: [workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  live:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      EXPO_NO_TELEMETRY: '1'
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - run: npm ci
+      - run: npm install --no-save --no-audit --no-fund @expo/ngrok@^4.1.0
+      - name: Start Expo with tunnel
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force live | Out-Null
+          $p = Start-Process cmd.exe -ArgumentList '/c', 'npx.cmd expo start --tunnel --go > live\expo.log 2>&1' -PassThru -WindowStyle Hidden
+          for ($i = 0; $i -lt 120; $i++) {
+            if ((Get-Content live\expo.log -Raw -ErrorAction SilentlyContinue) -match 'Tunnel ready') { break }
+            Start-Sleep -Seconds 2
+          }
+          Start-Sleep -Seconds 5
+          $m = (curl.exe -s -H 'expo-platform: ios' -H 'accept: application/expo+json,application/json' http://127.0.0.1:8081/) | ConvertFrom-Json
+          $u = [uri]$m.launchAsset.url
+          $info = [ordered]@{ os = [Environment]::OSVersion.VersionString; node = (node -v); expoGo = ('exp://' + $u.Host); phoneBrowser = ('http://' + $u.Host); loggedIn = [bool]$env:EXPO_TOKEN; at = (Get-Date).ToUniversalTime().ToString('o') }
+          $info | ConvertTo-Json | Set-Content live\url.json
+          Get-Content live\url.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: live-url
+          path: live/url.json
+      - name: Keep serving for 30 minutes
+        shell: powershell
+        run: |
+          Start-Sleep -Seconds 1800
+          Get-Content live\expo.log -Tail 40
